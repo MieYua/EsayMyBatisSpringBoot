@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="top.mieyua.my.mapper.AccountMapper">
+    <insert id="insertAccount" parameterType="top.mieyua.my.model.Account" useGeneratedKeys="true" keyProperty="id">
+        insert into my_account(username, password, description)
+        values(#{username}, #{password}, #{description})
+    </insert>
+    <update id="updateAccountByPrimaryKey" parameterType="top.mieyua.my.model.Account" useGeneratedKeys="true" keyProperty="id">
+        update my_account set username = #{username}, password = #{password}, description = #{description} where id = #{id}
+    </update>
+</mapper>
