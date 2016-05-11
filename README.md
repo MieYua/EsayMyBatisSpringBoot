@@ -4,7 +4,7 @@ Json, RESTful API, Maven
 ---
 
 ## Esay MyBatis Spring Boot Version ##
-* <strong>Ver. 1.0 (Released on 160506)</strong>
+* <strong>Ver. 1.1 (Released on 160511)</strong>
 
 ---
 
@@ -27,14 +27,17 @@ Json, RESTful API, Maven
 [1.2 其它的配置 | All configurations](#config-all)  
 [2 代码修改 | How to use](#how-to-use)  
 [2.1 数据库映射类设置 | Model setting](#model-setting)  
-[2.2 自定义数据库操作 | Additional database handler](#additional-database-handler)  
-[2.3 服务调用路由设置 | Controller setting](#controller-setting)  
+[2.2 自定义数据库操作（增加、修改） | Additional database handler(Inert&Update)](#additional-database-handler-1)  
+[2.3 自定义数据库操作（查询） | Additional database handler(Select)](#additional-database-handler-2)  
+[2.4 服务调用路由设置 | Controller setting](#controller-setting)  
 [3 使用接口 | Request examples](#request-examples)  
-[3.1 获取所有数据 | Get all records](#get-all)  
-[3.2 获取指定数据 | Get the record by id](#get-by-id)  
-[3.3 简单新建数据 | Insert new record](#post)  
-[3.4 更新指定数据 | Update the record by id](#put)  
-[3.5 删除指定数据 | Delete the record by id](#delete)  
+[3.1 获取所有账号 | Get all records](#get-all)  
+[3.2 获取指定账号 | Get the record by id](#get-by-id)  
+[3.3 简单新建账号 | Insert new record](#post)  
+[3.4 更新指定账号 | Update the record by id](#put)  
+[3.5 删除指定账号 | Delete the record by id](#delete)  
+[3.6 获取指定账号的自定义字段 | Get all account's additional records by accountId](#get-by-accountid)  
+[3.7 获取指定账号的自定义字段（分页） | Get all account's additional records by accountId into pages](#get-by-accountid-into-pages)  
 [4 简单文件服务历史版本 | Esay MyBatis Spring Boot History](#esay-mybatis-spring-boot-history)  
 
 ---
@@ -68,10 +71,27 @@ Json, RESTful API, Maven
 		  PRIMARY KEY (`id`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='测试账号表';
 		
+		CREATE TABLE `my_account_addition` (
+		  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'account自定键值',
+		  `account_id` int(11) NOT NULL COMMENT 'account表的id',
+		  `addition_key` varchar(50) NOT NULL COMMENT '增加的键名称',
+		  `addition_value` varchar(50) NOT NULL COMMENT '增加的值',
+		  `description` varchar(100) DEFAULT NULL COMMENT 'account自定键值描述',
+		  PRIMARY KEY (`id`)
+		) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8;
+		
 		-- 账号信息
 		INSERT INTO `my_account` VALUES ('1', 'root', 'root', CURRENT_TIMESTAMP, '管理员账号');
 		INSERT INTO `my_account` VALUES ('2', 'test', 'test', CURRENT_TIMESTAMP, '测试账号');
 		INSERT INTO `my_account` VALUES ('3', 'person', 'yes', CURRENT_TIMESTAMP, '测试账号');
+		
+		-- 账号自定义字段
+		INSERT INTO `my_account_addition` VALUES ('1', '1', 'nickname', '管理员', '增加昵称字段');
+		INSERT INTO `my_account_addition` VALUES ('2',	'1', 'sex', '男', '增加性别字段');
+		INSERT INTO `my_account_addition` VALUES ('3', '2', 'nickname', '测试账号', '增加昵称字段');
+		INSERT INTO `my_account_addition` VALUES ('4',	'2', 'sex', '女', '增加性别字段');
+		INSERT INTO `my_account_addition` VALUES ('5', '3', 'nickname', '测试账号2', '增加昵称字段');
+		INSERT INTO `my_account_addition` VALUES ('6',	'3', 'test', '测试', '增加测试字段');
 
 ### Config All ###
 [Top](#contents)
@@ -157,7 +177,7 @@ Json, RESTful API, Maven
 			...
 		}
 
-### Additional Database Handler ###
+### Additional Database Handler 1 ###
 [Top](#contents)
 
 * 首先配置映射配置xml文件`src\main\java\resources\mapper\AccountMapper.xml`：
@@ -253,6 +273,35 @@ Json, RESTful API, Maven
 		    }
 		}
 
+### Additional Database Handler 2 ###
+[Top](#contents)
+
+* 首先配置映射配置xml文件`src\main\java\resources\mapper\AccountAdditionMapper.xml`：
+
+		<?xml version="1.0" encoding="UTF-8" ?>
+		<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+		<mapper namespace="top.mieyua.my.mapper.AccountAdditionMapper">
+		    <resultMap id="additionMap" type="top.mieyua.my.model.AccountAddition">
+		        <id property="id" column="id" />
+				# 这里的property要和model里定义的参数名相同，column为数据库的列名
+		        <result property="accountId" column="account_id" />
+		        <result property="additionKey" column="addition_key" />
+		        <result property="additionValue" column="addition_value" />
+		        <result property="description" column="description" />
+		    </resultMap>
+		    <select id="selectByAccountId" parameterType="Integer" resultMap="additionMap">
+		        select * from my_account_addition where account_id = #{account_id}
+		    </select>
+		</mapper>
+
+* 在mapper类中声明方法`src\main\java\top.mieyua.my\mapper\AccountAdditionMapper.java`：
+
+		public interface AccountAdditionMapper extends MyMapper<AccountAddition> {
+		    public List<AccountAddition> selectByAccountId(Integer accountId);
+		}
+
+* 至此，之后的用法则与上面的[增加、修改](#additional-database-handler-1)相同。
+
 
 ### Controller Setting ###
 [Top](#contents)
@@ -305,6 +354,26 @@ Json, RESTful API, Maven
 		    }
 		}
 
+* 以AccountAdditionController为例`src\main\java\top.mieyua.my\controller\AccountAdditionController.java`：
+
+		// RestController注解
+		@RestController
+		// 请求路由后置注解
+		@RequestMapping("/accountAddition")
+		public class AccountAdditionController {
+			// 自动注入
+		    @Autowired
+		    private AccountAdditionService accountAdditionService;
+			
+			// GET请求，返回json数据
+		    @RequestMapping(value = "/{accountId}", method = RequestMethod.GET)
+			// @Param("")可以获取当前路由?后的参数
+		    public ModelMap viewStockByPage(@PathVariable Integer accountId, @Param("p") Integer p, @Param("n") Integer n) {
+		        ...
+			    return result;
+			}
+		}
+
 ---
 
 ## Request Examples ##
@@ -321,7 +390,14 @@ Json, RESTful API, Maven
 		
 *	成功返回：
 	
-		{"meta":{"code":200,"message":"成功查找数据"},"data":[{"id":1,"username":"root","password":"root","register_time":"2016-05-06","description":"管理员账号"},{"id":2,"username":"test","password":"test","register_time":"2016-05-06","description":"测试账号"},{"id":3,"username":"person","password":"yes","register_time":"2016-05-06","description":"测试账号"}]}
+		{
+			"meta":{"code":200,"message":"成功查找数据"},
+			"data":[
+				{"id":1,"username":"root","password":"root","register_time":"2016-05-06","description":"管理员账号"},
+				{"id":2,"username":"test","password":"test","register_time":"2016-05-06","description":"测试账号"},
+				{"id":3,"username":"person","password":"yes","register_time":"2016-05-06","description":"测试账号"}
+			]
+		}
 
 ### Get by Id ###
 [Top](#contents)
@@ -334,11 +410,17 @@ Json, RESTful API, Maven
 		
 *	成功返回：
 
-		{"meta":{"code":200,"message":"成功查找数据"},"data":{"id":1,"username":"root","password":"root","register_time":"2016-05-06","description":"管理员账号"}}
+		{
+			"meta":{"code":200,"message":"成功查找数据"},
+			"data":{"id":1,"username":"root","password":"root","register_time":"2016-05-06","description":"管理员账号"}
+		}
 
 *	错误返回：
 
-		{"meta":{"code":503,"message":"没有对应数据"},"data":null}
+		{
+			"meta":{"code":503,"message":"没有对应数据"},
+			"data":null
+		}
 
 ### Post ###
 [Top](#contents)
@@ -359,11 +441,17 @@ Json, RESTful API, Maven
 
 *	成功返回：
 		
-		{"meta":{"code":201,"message":"成功新增数据"},"data":null}
+		{
+			"meta":{"code":201,"message":"成功新增数据"},
+			"data":null
+		}
 
 *	错误返回：
 
-		{"meta":{"code":410,"message":"新增失败：该账号已经存在"},"data":null}
+		{
+			"meta":{"code":410,"message":"新增失败：该账号已经存在"},
+			"data":null
+		}
 		
 
 ### Put ###
@@ -385,11 +473,17 @@ Json, RESTful API, Maven
 
 *	成功返回：
 
-		{"meta":{"code":200,"message":"成功修改数据"},"data":null}
+		{
+			"meta":{"code":200,"message":"成功修改数据"},
+			"data":null
+		}
 
 *	错误返回：
 
-		{"meta":{"code":410,"message":"更新失败：想要修改的账号与请求不符合"},"data":null}
+		{
+			"meta":{"code":410,"message":"更新失败：想要修改的账号与请求不符合"},
+			"data":null
+		}
 
 ### Delete ###
 [Top](#contents)
@@ -402,11 +496,63 @@ Json, RESTful API, Maven
 
 *	成功返回：
 
-		{"meta":{"code":204,"message":"成功删除数据"},"data":null}
+		{
+			"meta":{"code":204,"message":"成功删除数据"},
+			"data":null
+		}
 
 *	错误返回：
 
-		{"meta":{"code":503,"message":"服务器错误：org.springframework.jdbc.BadSqlGrammarException:..."},"data":null}
+		{
+			"meta":{"code":503,"message":"服务器错误：org.springframework.jdbc.BadSqlGrammarException:..."},
+			"data":null
+		}
+
+
+### Get by AccountId ###
+[Top](#contents)
+
+*	获得指定accountId（int account_id）的自定义字段信息
+ 
+*	请求示例：
+
+		GET http://URL:port/v1/account/account_id
+		
+*	成功返回：
+
+		{
+			"meta":{"code":200,"message":"成功查找数据"},
+			"data":[
+				{"id":1,"account_id":1,"addition_key":"nickname","addition_value":"管理员","description":"增加昵称字段"},
+				{"id":2,"account_id":1,"addition_key":"sex","addition_value":"男","description":"增加性别字段"}
+			]
+		}
+
+
+### Get by AccountId into Pages ###
+[Top](#contents)
+
+*	获得指定accountId（int account_id）的自定义字段信息（分页?p=vp&n=vn，vp为页码，vn为每页个数）
+ 
+*	请求示例：
+
+		GET http://URL:port/v1/account/account_id?p=1&n=1
+		
+*	成功返回：
+
+		{
+			"meta":{"code":200,"message":"成功查找数据"},
+			"data":{
+				"page_info":{
+					"current_page":1,
+					"items_per_page":1,
+					"total_page":2
+				},
+				"products":[
+				{"id":1,"account_id":1,"addition_key":"nickname","addition_value":"管理员","description":"增加昵称字段"}
+				]
+			}
+		}
 
 ---
 
@@ -419,6 +565,11 @@ Json, RESTful API, Maven
 	* Json数据解析；
 	* 简单数据库实例；
 	* 简单MyBatis增删改查的Spring Boot服务。
+
+### Ver. 1.1 (20160511) ###
+* 新增AccountAddition（账号自定义字段表）；
+* 增加自定义select功能；
+* 增加可分页路由。
 
 ---
 

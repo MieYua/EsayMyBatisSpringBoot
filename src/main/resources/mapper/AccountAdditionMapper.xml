@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="top.mieyua.my.mapper.AccountAdditionMapper">
+    <resultMap id="additionMap" type="top.mieyua.my.model.AccountAddition">
+        <id property="id" column="id" />
+        <result property="accountId" column="account_id" />
+        <result property="additionKey" column="addition_key" />
+        <result property="additionValue" column="addition_value" />
+        <result property="description" column="description" />
+    </resultMap>
+    <select id="selectByAccountId" parameterType="Integer" resultMap="additionMap">
+        select * from my_account_addition where account_id = #{account_id}
+    </select>
+</mapper>

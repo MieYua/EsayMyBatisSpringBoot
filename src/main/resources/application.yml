@@ -4,7 +4,7 @@ server:
 
 spring:
     datasource:
-#        url: jdbc:sqlserver://localhost;3306/my_test
+#        url: jdbc:sqlserver://localhost:3306/my_test
 #        username: root
 #        password: xxxxxx
         name: test
