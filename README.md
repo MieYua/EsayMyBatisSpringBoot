@@ -25,6 +25,7 @@ Json, RESTful API, Maven
 [1 配置文件 | Configuration](#configuration)  
 [1.1 数据库配置 | MySQL configurations](#config-sql)  
 [1.2 其它的配置 | All configurations](#config-all)  
+[1.3 时间的格式 | Time Configuration](#config-time)  
 [2 代码修改 | How to use](#how-to-use)  
 [2.1 数据库映射类设置 | Model setting](#model-setting)  
 [2.2 自定义数据库操作（增加、修改） | Additional database handler(Inert&Update)](#additional-database-handler-1)  
@@ -140,6 +141,20 @@ Json, RESTful API, Maven
 		    freemarker:
 		        cache: false
 		        request-context-attribute: request
+
+
+### Config Time ###
+[Top](#contents)
+
+* Model：
+	* 显示完整时间	java.sql.Timestamp
+	* 仅显示年月日	java.sql.Date
+	* 仅显示时分秒	java.sql.Date
+
+* MapperXML(ResultMap)：
+	* 显示完整时间	jdbcType="TIMESTAMP"
+	* 仅显示年月日	jdbcType="DATE"
+	* 仅显示时分秒	jdbcType="TIME"
 
 ---
 
